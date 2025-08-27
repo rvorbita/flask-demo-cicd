@@ -5,12 +5,6 @@ pipeline {
     VENV = 'venv'
   }
 
-  options {
-    timestamps()
-    ansiColor('xterm')
-    buildDiscarder(logRotator(numToKeepStr: '20'))
-  }
-
   stages {
     stage('Checkout Git') {
       steps {
@@ -69,3 +63,4 @@ pipeline {
     }
   }
 }
+
