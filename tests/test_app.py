@@ -5,6 +5,7 @@ def test_health():
     resp = client.get("/health")
     assert resp.status_code == 200
     assert resp.json["status"] == "ok"
+    print("Health-check endpoint:", resp.json)
 
 
 def test_home():
@@ -12,3 +13,4 @@ def test_home():
     resp = clinet.get("/")
     assert resp.status_code == 200
     assert resp.json['message'] == "Hello, CI/CD with Jenkins in Docker!"
+    print("Home endpoint:", resp.json)
