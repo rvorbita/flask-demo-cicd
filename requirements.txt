@@ -1,0 +1,4 @@
+Flask>=2.3,<4
+gunicorn>=21,<22
+pytest>=8,<9
+flake8>=7,<8
