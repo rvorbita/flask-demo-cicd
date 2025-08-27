@@ -31,8 +31,8 @@ pipeline {
                     # Run lint but don’t fail the build if errors are found
                     flake8 . || true
                     mkdir -p reports
-                    # Run tests, always generate junit report if possible
-                    pytest -q --junitxml=reports/junit.xml || true
+                    # Run tests, always include repo root in Python path
+                    pytest -q --junitxml=reports/junit.xml --maxfail=1 --disable-warnings -o pythonpath=. || true
                 '''
             }
             post {
