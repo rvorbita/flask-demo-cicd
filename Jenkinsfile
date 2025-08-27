@@ -13,9 +13,12 @@ pipeline {
     }
 
     stage('Setup Python venv') {
+      agent {
+        docker { image 'python:3.11-slim' }
+      }
       steps {
         sh '''
-          python3 -m venv ${VENV}
+          python -m venv ${VENV}
           . ${VENV}/bin/activate
           pip install --upgrade pip
           pip install -r requirements.txt
@@ -24,6 +27,9 @@ pipeline {
     }
 
     stage('Lint & Test') {
+      agent {
+        docker { image 'python:3.11-slim' }
+      }
       steps {
         sh '''
           . ${VENV}/bin/activate
@@ -41,6 +47,9 @@ pipeline {
     }
 
     stage('Run Flask App (smoke test)') {
+      agent {
+        docker { image 'python:3.11-slim' }
+      }
       steps {
         sh '''
           . ${VENV}/bin/activate
@@ -63,4 +72,3 @@ pipeline {
     }
   }
 }
-
