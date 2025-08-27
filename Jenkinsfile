@@ -1,73 +1,94 @@
 pipeline {
-    agent any
-
-    environment {
-        VENV = 'venv'
-    }
-
+    
+    agent any 
+    
     stages {
-        stage('Checkout Git') {
+        stage('Check out github repo') {
             steps {
                 git branch: 'main', url: 'https://github.com/rvorbita/flask-demo-cicd'
             }
-        }
-
-        stage('Setup Python venv') {
-            steps {
-                sh '''
-                    python3 -m venv ${VENV}
-                    . ${VENV}/bin/activate
-                    pip install --upgrade pip
-                    pip install -r requirements.txt
-                '''
+            
+            post {
+                success {
+                    echo "Repo checkout successful."
+                }
+                failure {
+                    echo "Failed to checkout repo."
+                }
             }
         }
-
-        stage('Lint & Test') {
+        
+        stage('Setup environment') {
             steps {
-                sh '''
-                    . ${VENV}/bin/activate
-                    pip install flake8 pytest
-                    # Run lint but don’t fail the build if errors are found
-                    flake8 . || true
-                    mkdir -p reports
-                    # Run tests, always include repo root in Python path
-                    pytest -q --junitxml=reports/junit.xml --maxfail=1 --disable-warnings -o pythonpath=. || true
+                sh ''' 
+                    python3 -m venv venv
+                    . venv/bin/activate
+                    pip install -r requirements.txt
                 '''
             }
             post {
                 always {
-                    script {
-                        if (fileExists('reports/junit.xml')) {
-                            junit 'reports/junit.xml'
-                        } else {
-                            echo "⚠ No test report generated."
-                        }
-                    }
+                    echo "Environment setup stage finished."
                 }
             }
         }
-
-        stage('Run Flask App (smoke test)') {
+        
+        stage('Run Tests') {
             steps {
                 sh '''
-                    . ${VENV}/bin/activate
-                    nohup python app.py > flask.log 2>&1 &
-                    FLASK_PID=$!
-                    sleep 5
-                    curl -f http://127.0.0.1:5000/ || (echo "Flask app did not start!" && kill $FLASK_PID && exit 1)
-                    kill $FLASK_PID
+                    . venv/bin/activate
+                    export PYTHONPATH=$PWD
+                    pytest -s -v \
+                    --junitxml=reports/results.xml \
+                    --cov=app --cov-report=xml --cov-report=html \
+                    tests/
                 '''
+            }
+            
+            post {
+                always {
+                        junit 'reports/*.xml'  // publish pytest results
+                        archiveArtifacts artifacts: 'coverage.xml, htmlcov/**', fingerprint: true
+                        publishHTML(target: [
+                            allowMissing: false,
+                            alwaysLinkToLastBuild: true,
+                            keepAll: true,
+                            reportDir: 'htmlcov',
+                            reportFiles: 'index.html',
+                            reportName: 'Coverage Report'
+                        ])
+                    }
+                
+                success {
+                    echo "Tests passed"
+                }
+                failure {
+                    echo "Tests Failed - check test reports in jenkins."
+                }
+            }
+        }
+        
+        stage('Deploy') {
+            steps {
+                echo "Deploying application."
+            }
+            post {
+                always {
+                    echo "Deploy stage completed."
+                }
             }
         }
     }
-
+    
     post {
         success {
-            echo "✔ Flask pipeline finished successfully."
+            echo "All stages completed successfully!"
         }
         failure {
-            echo "✖ Build failed. Check logs."
+            echo "Pipeline failed. Sending alert..."
+        }
+        always {
+            echo "Pipeline execution finished!"
         }
     }
 }
