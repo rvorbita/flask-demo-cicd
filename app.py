@@ -8,7 +8,7 @@ def health():
 
 @app.get("/")
 def index():
-    return "Hello, CI/CD with Jenkins in Docker!", 200
+    return jsonify(message="Hello, CI/CD with Jenkins in Docker!"), 200
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
